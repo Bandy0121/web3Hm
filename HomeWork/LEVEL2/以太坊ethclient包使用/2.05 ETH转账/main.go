@@ -36,16 +36,24 @@ func main() {
 		log.Fatal(err)
 	}
 
-	value := big.NewInt(1000000000000000000) // in wei (1 eth)
-	gasLimit := uint64(21000)                // in units
+	value := big.NewInt(10000000000000000) // in wei (1 eth)
+	gasLimit := uint64(21000)              // in units
 	gasPrice, err := client.SuggestGasPrice(context.Background())
 	if err != nil {
 		log.Fatal(err)
 	}
 
-	toAddress := common.HexToAddress("0x4592d8f8d7b001e72cb26a73e4fa1806a51ac79d")
+	toAddress := common.HexToAddress("0x804c591679b1a49d9556AEF7BFE9E59f2265ffC0")
 	var data []byte
-	tx := types.NewTransaction(nonce, toAddress, value, gasLimit, gasPrice, data)
+	//tx := types.NewTransaction(nonce, toAddress, value, gasLimit, gasPrice, data)  //NewTransaction已弃用
+	tx := types.NewTx(&types.LegacyTx{
+		Nonce:    nonce,
+		To:       &toAddress,
+		Value:    value,
+		Gas:      gasLimit,
+		GasPrice: gasPrice,
+		Data:     data,
+	})
 
 	chainID, err := client.NetworkID(context.Background())
 	if err != nil {
@@ -63,4 +71,5 @@ func main() {
 	}
 
 	fmt.Printf("tx sent: %s", signedTx.Hash().Hex())
+	//0x7b045fce597436ebabbb0e29e339eac6642b586b29072f3bd4a6e34607ffea92
 }
