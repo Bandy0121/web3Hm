@@ -49,7 +49,7 @@ func main() {
 	if err != nil {
 		log.Fatal(err)
 	}
-	fmt.Println("_item：", _item)
+	fmt.Println("_item：", item)
 	item := hexutil.Encode(_item[:]) //把[32]byte的_item转成切片[]byte
 	fmt.Println("item：", item)
 }
