@@ -13,7 +13,20 @@ import (
 	"os"
 )
 
-//var StoreABI = `[{"inputs":[{"internalType":"string","name":"_version","type":"string"}],"stateMutability":"nonpayable","type":"constructor"},{"anonymous":false,"inputs":[{"indexed":true,"internalType":"bytes32","name":"key","type":"bytes32"},{"indexed":false,"internalType":"bytes32","name":"value","type":"bytes32"}],"name":"ItemSet","type":"event"},{"inputs":[{"internalType":"bytes32","name":"","type":"bytes32"}],"name":"items","outputs":[{"internalType":"bytes32","name":"","type":"bytes32"}],"stateMutability":"view","type":"function"},{"inputs":[{"internalType":"bytes32","name":"key","type":"bytes32"},{"internalType":"bytes32","name":"value","type":"bytes32"}],"name":"setItem","outputs":[],"stateMutability":"nonpayable","type":"function"},{"inputs":[],"name":"version","outputs":[{"internalType":"string","name":"","type":"string"}],"stateMutability":"view","type":"function"}]`
+// var StoreABI = `[{"inputs":[{"internalType":"string","name":"_version","type":"string"}],"stateMutability":"nonpayable","type":"constructor"},{"anonymous":false,"inputs":[{"indexed":true,"internalType":"bytes32","name":"key","type":"bytes32"},{"indexed":false,"internalType":"bytes32","name":"value","type":"bytes32"}],"name":"ItemSet","type":"event"},{"inputs":[{"internalType":"bytes32","name":"","type":"bytes32"}],"name":"items","outputs":[{"internalType":"bytes32","name":"","type":"bytes32"}],"stateMutability":"view","type":"function"},{"inputs":[{"internalType":"bytes32","name":"key","type":"bytes32"},{"internalType":"bytes32","name":"value","type":"bytes32"}],"name":"setItem","outputs":[],"stateMutability":"nonpayable","type":"function"},{"inputs":[],"name":"version","outputs":[{"internalType":"string","name":"","type":"string"}],"stateMutability":"view","type":"function"}]`
+// LogTransfer ..
+type LogTransfer struct {
+	From   common.Address
+	To     common.Address
+	Tokens *big.Int
+}
+
+// LogApproval ..
+type LogApproval struct {
+	TokenOwner common.Address
+	Spender    common.Address
+	Tokens     *big.Int
+}
 
 func main() {
 	client, err := ethclient.Dial("https://eth-sepolia.g.alchemy.com/v2/9LURSvm6osXr98M_7j_AfY4fdhs2J9WL")
@@ -53,6 +66,11 @@ func main() {
 		log.Fatal(err)
 	}
 
+	logTransferSig := []byte("Transfer(address,address,uint256)")
+	LogApprovalSig := []byte("Approval(address,address,uint256)")
+	logTransferSigHash := crypto.Keccak256Hash(logTransferSig)
+	logApprovalSigHash := crypto.Keccak256Hash(LogApprovalSig)
+
 	for _, vLog := range logs {
 		fmt.Println(vLog.BlockHash.Hex())
 		fmt.Println(vLog.BlockNumber)
@@ -77,6 +95,47 @@ func main() {
 		if len(topics) > 1 {
 			fmt.Println("indexed topics:", topics[1:])
 		}
+
+		fmt.Printf("Log Block Number: %d\n", vLog.BlockNumber)
+		fmt.Printf("Log Index: %d\n", vLog.Index)
+
+		switch vLog.Topics[0].Hex() {
+		case logTransferSigHash.Hex():
+			fmt.Printf("Log Name: Transfer\n")
+
+			var transferEvent LogTransfer
+
+			err := contractAbi.UnpackIntoInterface(&transferEvent, "Transfer", vLog.Data)
+			if err != nil {
+				log.Fatal(err)
+			}
+
+			transferEvent.From = common.HexToAddress(vLog.Topics[1].Hex())
+			transferEvent.To = common.HexToAddress(vLog.Topics[2].Hex())
+
+			fmt.Printf("From: %s\n", transferEvent.From.Hex())
+			fmt.Printf("To: %s\n", transferEvent.To.Hex())
+			fmt.Printf("Tokens: %s\n", transferEvent.Tokens.String())
+
+		case logApprovalSigHash.Hex():
+			fmt.Printf("Log Name: Approval\n")
+
+			var approvalEvent LogApproval
+
+			err := contractAbi.UnpackIntoInterface(&approvalEvent, "Approval", vLog.Data)
+			if err != nil {
+				log.Fatal(err)
+			}
+
+			approvalEvent.TokenOwner = common.HexToAddress(vLog.Topics[1].Hex())
+			approvalEvent.Spender = common.HexToAddress(vLog.Topics[2].Hex())
+
+			fmt.Printf("Token Owner: %s\n", approvalEvent.TokenOwner.Hex())
+			fmt.Printf("Spender: %s\n", approvalEvent.Spender.Hex())
+			fmt.Printf("Tokens: %s\n", approvalEvent.Tokens.String())
+		}
+
+		fmt.Printf("\n\n")
 	}
 
 	eventSignature := []byte("ItemSet(bytes32,bytes32)")

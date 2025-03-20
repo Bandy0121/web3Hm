@@ -65,6 +65,23 @@ func main() {
 		log.Fatal(err)
 	}
 
+	//构建原始交易
+	//rawTxBytes, err := signedTx.MarshalBinary()
+	//if err != nil {
+	//	log.Fatal(err)
+	//}
+	//rawTxHex := hex.EncodeToString(rawTxBytes)
+	//fmt.Printf(rawTxHex) // f86...772
+	//
+	//_rawTxBytes, err := hex.DecodeString(rawTxHex)
+	//if err != nil {
+	//	log.Fatal(err)
+	//}
+	//_tx := new(types.Transaction)
+	//rlp.DecodeBytes(_rawTxBytes, &_tx)
+	//err = client.SendTransaction(context.Background(), _tx)发送原始交易事务
+
+	//广播交易
 	err = client.SendTransaction(context.Background(), signedTx)
 	if err != nil {
 		log.Fatal(err)
